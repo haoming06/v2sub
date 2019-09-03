@@ -52,56 +52,116 @@ while True:
 
 # 编辑 v2ray 配置文件
 v2rayConf = {
-  "inbound": {
-    "port": 1080,
-    "listen": "127.0.0.1",
-    "protocol": "socks",
-    "settings": {
-      "udp": True
-    }
+  "log": {
+    "error": "",
+    "loglevel": "info",
+    "access": ""
   },
-  "outbound": {
-    "protocol": "vmess",
-    "settings": {
-      "vnext": [{
-        "address": serverListLink[setServerNodeId]['add'],
-        "port": int(serverListLink[setServerNodeId]['port']),
-        "users": [{ "id": serverListLink[setServerNodeId]['id'] }]
-      }]
+  "inbounds": [
+    {
+      "listen": "127.0.0.1",
+      "protocol": "socks",
+      "settings": {
+        "ip": "",
+        "userLevel": 0,
+        "timeout": 360,
+        "udp": False,
+        "auth": "noauth"
+      },
+      "port": "1080"
+    },
+    {
+      "listen": "127.0.0.1",
+      "protocol": "http",
+      "settings": {
+        "timeout": 360
+      },
+      "port": "1187"
     }
+  ],
+  "outbounds": [
+    {
+      "mux": {
+        "enabled": False,
+        "concurrency": 8
+      },
+      "protocol": "vmess",
+      "streamSettings": {
+        "wsSettings": {
+          "path": "",
+          "headers": {
+            "host": serverListLink[setServerNodeId]['host']
+          }
+        },
+        "tlsSettings": {
+          "allowInsecure": True
+        },
+        "security": "none",
+        "network": "ws"
+      },
+      "tag": "agentout",
+      "settings": {
+        "vnext": [
+          {
+            "address": serverListLink[setServerNodeId]['add'],
+            "users": [
+              {
+                "id": serverListLink[setServerNodeId]['id'],
+                "alterId": int(serverListLink[setServerNodeId]['aid']),
+                "level": 0,
+                "security": "aes-128-gcm"
+              }
+            ],
+            "port": int(serverListLink[setServerNodeId]['port'])
+          }
+        ]
+      }
+    },
+    {
+      "tag": "direct",
+      "protocol": "freedom",
+      "settings": {
+        "domainStrategy": "AsIs",
+        "redirect": "",
+        "userLevel": 0
+      }
+    },
+    {
+      "tag": "blockout",
+      "protocol": "blackhole",
+      "settings": {
+        "response": {
+          "type": "none"
+        }
+      }
+    }
+  ],
+  "dns": {
+    "servers": [
+      ""
+    ]
   },
-  "outboundDetour": [{
-    "protocol": "freedom",
-    "tag": "direct",
-    "settings": {}
-  }],
   "routing": {
     "strategy": "rules",
     "settings": {
-      "domainStrategy": "IPOnDemand",
-      "rules": [{
-        "type": "field",
-        "ip": [
-          "0.0.0.0/8",
-          "10.0.0.0/8",
-          "100.64.0.0/10",
-          "127.0.0.0/8",
-          "169.254.0.0/16",
-          "172.16.0.0/12",
-          "192.0.0.0/24",
-          "192.0.2.0/24",
-          "192.168.0.0/16",
-          "198.18.0.0/15",
-          "198.51.100.0/24",
-          "203.0.113.0/24",
-          "::1/128",
-          "fc00::/7",
-          "fe80::/10"
-        ],
-        "outboundTag": "direct"
-      }]
+      "domainStrategy": "IPIfNonMatch",
+      "rules": [
+        {
+          "outboundTag": "direct",
+          "type": "field",
+          "ip": [
+            "geoip:cn",
+            "geoip:private"
+          ],
+          "domain": [
+            "geosite:cn",
+            "geosite:speedtest"
+          ]
+        }
+      ]
     }
-  }
+  },
+  "transport": {}
 }
 
 json.dump(v2rayConf, open('/etc/v2ray/config.json', 'w'), indent=2)
@@ -112,3 +172,4 @@ subprocess.call('systemctl restart v2ray.service', shell = True)
 print('地址切换完成')
 
 exit()
+
