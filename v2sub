@@ -38,7 +38,11 @@ print('如果您的订阅地址有误，请删除或编辑 '+subFilePath)
 print("\n开始从订阅地址中读取服务器节点… 如等待时间过久，请检查网络。\n")
 
 # 获取订阅信息
-serverListLink = base64.b64decode(requests.get(subLink).content).splitlines()
+content = requests.get(subLink).content
+missing_padding = 4 - len(content) % 4
+if missing_padding:
+  content += b'=' * missing_padding
+serverListLink = base64.urlsafe_b64decode(content).splitlines()
 for i in range(len(serverListLink)):
     serverNode = json.loads(base64.b64decode(bytes.decode(serverListLink[i]).replace('vmess://','')))
     print('【' + str(i) + '】' + serverNode['ps'])
